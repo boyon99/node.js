@@ -14,6 +14,7 @@ function templateHTML(title, list, body) {
     <body>
       <h1><a href="/">WEB</a></h1>
       ${list}
+      <a href="/create">create</a>
       ${body}
     </body>
     </html>
@@ -63,12 +64,55 @@ let app = http.createServer(function (req, res) {
         })
       })
     }
-  } else {
+  } else if (pathname === '/create') {
+    if (queryData.id === undefined) {
+      // 데이터 폴더 안에 있는 파일이름을 배열 형식으로 가져오기
+      fs.readdir('./data', function (err, filelist) {
+        let list = templateList(filelist)
+        // title
+        let title = "WEB - create"
+        let description = "Hello, Node.js"
+        let template = templateHTML(title, list, `
+          <form action="http://localhost:1000/create_process" method="post">
+          <p>
+            <input type="text" name="title" placeholder="title"></input>
+          </p>
+          <p>
+            <textarea name="description" placeholder="description"></textarea>
+          </p>
+          <p>
+            <input type="submit"></input>
+          </p>         
+        </form>
+        `);
+        res.end(template)
+      })
+    }
+  }
+  // create_process인 경우
+  else if (pathname === '/create_process') {
+    var body = '';
+    // post로 전송한 데이터 받기
+    req.on('data', function (data) {
+      body += data;
+    })
+
+    req.on('end', function () {
+      var post = qs.parse(body);
+      var title = post.title;
+      var description = post.description;
+      fs.writeFile(`data/${title}`, description, 'utf8', function (err) {
+        res.writeHead(200)
+        console.log(err)
+        res.end('success')
+      })
+    })
+  }
+  // 그 외에 경로인 경우
+  else {
     res.writeHead(200)
     res.end('not found')
   }
-
-
 })
 
 app.listen(1000)
